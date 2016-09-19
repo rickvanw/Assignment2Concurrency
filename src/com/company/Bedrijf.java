@@ -33,9 +33,17 @@ public class Bedrijf {
     private Gebruiker[] gebruiker;
     private Softwareontwikkelaar[] softwareontwikkelaar;
     private ProductOwner productOwner;
-    private Semaphore uitnodiging;
+    private Semaphore probleemMelding, uitnodigingGesprek, aankomstMelding, gesprekUitnodiging,
+            inSoftwareOntwikkelaarOverleg, inGebruikersOverleg, beschikbaarVoorOverleg;
 
     public Bedrijf() {
+        probleemMelding = new Semaphore(0, true);
+        uitnodigingGesprek = new Semaphore(0, true);
+        aankomstMelding = new Semaphore(0, true);
+        gesprekUitnodiging = new Semaphore(0, true);
+        inSoftwareOntwikkelaarOverleg = new Semaphore(4, true);
+        inGebruikersOverleg = new Semaphore(12, true);
+        beschikbaarVoorOverleg = new Semaphore(0, true);
 
 
         gebruiker = new Gebruiker[AANTAL_GEBRUIKERS];
@@ -86,10 +94,13 @@ public class Bedrijf {
         public void run() {
             while (true) {
                 try {
-
                     // meldt regelmatig dat beshcikbaar is voor overleg
-
+                    beschikbaarVoorOverleg.acquire();
                     // als projectleider in overleg is, verder met werk
+                    if(inGebruikersOverleg.tryAcquire() || inSoftwareOntwikkelaarOverleg.tryAcquire()){
+
+                        
+                    }
                     // als projectleider niet in overleg is, wachten voor uitnodiging voor een overleg
                     // OF tot geconstateerd dat niet bij gesprek hoort, dan verder met werk
 
@@ -104,6 +115,8 @@ public class Bedrijf {
         public void run() {
             while (true) {
                 try {
+
+
 
                 } catch (InterruptedException e) {}
             }
@@ -122,13 +135,13 @@ public class Bedrijf {
             while (true) {
                 try {
                     // probleem?, melden bij bedrijf
-
+                    probleemMelding.acquire();
                     // wachten tot uitgenodigd voor overleg
-
+                    uitnodigingGesprek.acquire();
                     // reizen naar bedrijf en melden aangekomen om te overleggen
-
+                    aankomstMelding.acquire();
                     // wachten tot product owner zegt dat gesprek begint
-
+                    gesprekUitnodiging.acquire();
 
                 } catch (InterruptedException e) {}
             }
