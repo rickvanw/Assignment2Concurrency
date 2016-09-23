@@ -5,7 +5,9 @@ public class Main {
     public static void main(String[] args) {
 	// write your code here
 
-        Barbershop barbershop = new Barbershop();
+        Bedrijf bedrijf = new Bedrijf();
+
+        //test t = new test();
 
     }
 }

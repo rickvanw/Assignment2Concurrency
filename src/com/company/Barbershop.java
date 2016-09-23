@@ -19,7 +19,7 @@ public class Barbershop {
         hairCut = new Semaphore(0, true); // niemand geknipt
         barberInvitation = new Semaphore(0, true); // niemand uitgenodigd voor barber chair
         inBarberChair = new Semaphore(0,true);
-        mutex = new Semaphore(0, true);
+        mutex = new Semaphore(0);
 
         customer = new Customer[NR_OF_CUSTOMERS];
         for(int i=0; i < NR_OF_CUSTOMERS; i++){
@@ -45,9 +45,7 @@ public class Barbershop {
                     hairCut.release();
 
                 } catch (InterruptedException e) {}
-
             }
-
         }
 
         private void cut(){
@@ -57,9 +55,7 @@ public class Barbershop {
                 Thread.sleep((int)(Math.random()*1000));
 
             } catch(InterruptedException e){}
-
         }
-
     }
 
         public class Customer extends Thread{
@@ -111,7 +107,6 @@ public class Barbershop {
                 } catch(InterruptedException e){}
                 */
             }
-
             // justLive();
 
             // goto barber

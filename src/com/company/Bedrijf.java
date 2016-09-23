@@ -30,22 +30,38 @@ import java.util.concurrent.Semaphore;
 public class Bedrijf {
     private static final int AANTAL_SOFTWAREONTWIKKELAARS = 6;
     private static final int AANTAL_GEBRUIKERS = 10;
+    private int AANTAL_SOFTWAREONTWIKKELAARS_BINNEN;
+    private int AANTAL_SOFTWAREONTWIKKELAARS_UITGENODIGD;
+    private int AANTAL_GEBRUIKERS_BINNEN;
+    private int AANTAL_GEBRUIKERS_UITGENODIGD;
+
+    private boolean inOverleg;
     private Gebruiker[] gebruiker;
     private Softwareontwikkelaar[] softwareontwikkelaar;
     private ProductOwner productOwner;
-    private Semaphore probleemMelding, uitnodigingGesprek, aankomstMelding, gesprekUitnodiging,
-            inSoftwareOntwikkelaarOverleg, inGebruikersOverleg, beschikbaarVoorOverleg;
+    private Semaphore checkin, waitingDev, waitingDevOverleg, waitingGebrUitn, waitingGebrOverleg, mutexGebr, mutexDev, mutexDevUitn, mutexGebrUitn;
 
     public Bedrijf() {
-        probleemMelding = new Semaphore(0, true);
-        uitnodigingGesprek = new Semaphore(0, true);
-        aankomstMelding = new Semaphore(0, true);
-        gesprekUitnodiging = new Semaphore(0, true);
-        inSoftwareOntwikkelaarOverleg = new Semaphore(4, true);
-        inGebruikersOverleg = new Semaphore(12, true);
-        beschikbaarVoorOverleg = new Semaphore(0, true);
+        checkin = new Semaphore(0, true);
+        waitingGebrUitn = new Semaphore(10, true);
+        waitingGebrOverleg = new Semaphore(10, true);
+        waitingDev = new Semaphore(3, true);
+        waitingDevOverleg = new Semaphore(0, true);
+
+        mutexGebr = new Semaphore(1);
+        mutexGebrUitn = new Semaphore(1);
+        mutexDev = new Semaphore(1);
+        mutexDevUitn = new Semaphore(1);
 
 
+        inOverleg = false;
+        AANTAL_SOFTWAREONTWIKKELAARS_BINNEN = 0;
+        AANTAL_GEBRUIKERS_BINNEN = 0;
+        AANTAL_GEBRUIKERS_UITGENODIGD = 0;
+        AANTAL_SOFTWAREONTWIKKELAARS_UITGENODIGD = 0;
+
+
+        // Aanmaken gebruikers
         gebruiker = new Gebruiker[AANTAL_GEBRUIKERS];
         for(int i=0; i < AANTAL_GEBRUIKERS; i++){
 
@@ -53,6 +69,7 @@ public class Bedrijf {
             gebruiker[i].start();
         }
 
+        // Aanmaken softwareontwikkelaars
         softwareontwikkelaar = new Softwareontwikkelaar[AANTAL_SOFTWAREONTWIKKELAARS];
         for(int i=0; i < AANTAL_SOFTWAREONTWIKKELAARS; i++){
 
@@ -60,6 +77,7 @@ public class Bedrijf {
             softwareontwikkelaar[i].start();
         }
 
+        // Aanmaken Product Owner
         productOwner = new ProductOwner();
         productOwner.start();
 
@@ -67,20 +85,138 @@ public class Bedrijf {
 
     private void SoftwareOntwikkelaarOverleg(){
         try{
+            inOverleg=true;
 
-        } catch(InterruptedException e){
+            System.out.println("in softwareoverleg");
 
-        }
+            System.out.println("in softwareoverleg - AANTAL DEVS: " + AANTAL_GEBRUIKERS_UITGENODIGD);
+            System.out.println("in softwareoverleg - PERMITS DEVS: " + waitingDevOverleg.availablePermits());
+
+            waitingDev.release(3);
+
+            AANTAL_SOFTWAREONTWIKKELAARS_BINNEN=0;
+            System.out.println("in softwareoverleg - PERMITS DEVS: " + waitingDevOverleg.availablePermits());
+            System.out.println("in softwareoverleg - AANTAL DEVS: " + AANTAL_GEBRUIKERS_UITGENODIGD);
+
+
+            Thread.sleep(2000);
+
+            inOverleg=false;
+        } catch(InterruptedException e){}
     }
 
     private void GebruikersOverleg(){
         try{
+            inOverleg=true;
 
-        } catch(InterruptedException e){
+            // De duur van het gesprek
+            Thread.sleep(2000);
 
+            // TEST PRINT
+            System.out.println("in gebruikersoverleg");
+            System.out.println("in gebruikersoverleg - AANTAL GEBR: " + AANTAL_GEBRUIKERS_UITGENODIGD);
+            System.out.println("in gebruikersoverleg - PERMITS GEBR: " + waitingGebrOverleg.availablePermits());
+            //
+
+
+            // GEBR vrijlaten na gesprek
+            waitingGebrOverleg.release(AANTAL_GEBRUIKERS_UITGENODIGD);
+
+            // TEST PRINT
+            System.out.println("in gebruikersoverleg - PERMITS GEBR: " + waitingGebrOverleg.availablePermits());
+            //
+
+            // Aantal uitgenodigde DEVS is nu 0
+            mutexDev.acquire();
+            AANTAL_SOFTWAREONTWIKKELAARS_UITGENODIGD=0;
+            mutexDev.release();
+
+            // Aantal uitgenodigde GEBR is nu 0
+            mutexGebr.acquire();
+            AANTAL_GEBRUIKERS_UITGENODIGD=0;
+            mutexGebr.release();
+
+            // TEST PRINT
+            System.out.println("in gebruikersoverleg - AANTAL GEBR: " + AANTAL_GEBRUIKERS_BINNEN);
+            //
+
+
+            inOverleg=false;
+
+        } catch(InterruptedException e){}
+    }
+
+    public class ProductOwner extends Thread{
+
+        public void run() {
+            while (true) {
+                try {
+
+                    checkin.acquire();
+
+                    System.out.println("aantal gebruikers: "+AANTAL_GEBRUIKERS_BINNEN);
+                    System.out.println("aantal softwareontwikkelaars: "+AANTAL_SOFTWAREONTWIKKELAARS_BINNEN);
+
+                    if(AANTAL_GEBRUIKERS_BINNEN>=1){
+
+                        // Zeker een gebruiksoverleg, maar eerst minstens 1 dev aanwezig
+
+                        if(AANTAL_SOFTWAREONTWIKKELAARS_BINNEN>=1) {
+
+                            // gebruiksoverleg kan plaatsvinden, eerst iedereen uitnodigen
+
+                            System.out.println("gebruikersoverleg");
+
+                            // gebruikers naar stap uitnodiging
+                            waitingGebrUitn.release(AANTAL_GEBRUIKERS_BINNEN);
+
+                            // devs naar stap uitnodiging
+                            waitingDev.release(AANTAL_SOFTWAREONTWIKKELAARS_BINNEN);
+
+
+                            mutexDev.acquire();
+                            AANTAL_SOFTWAREONTWIKKELAARS_BINNEN=0;
+                            mutexDev.release();
+
+                            mutexDev.acquire();
+                            AANTAL_GEBRUIKERS_BINNEN=0;
+                            mutexDev.release();
+
+                            // 1 DEV uitnodigen
+                            waitingDevOverleg.release();
+
+                            // Alle GEBR uitnodigen
+                            waitingGebrOverleg.release(AANTAL_GEBRUIKERS_UITGENODIGD);
+
+                            // Overleg starten
+                            GebruikersOverleg();
+                        }
+
+                    }else if (AANTAL_SOFTWAREONTWIKKELAARS_BINNEN>=3){
+
+                        // Een softwareoverleg
+
+                        System.out.println("softwareoverleg");
+
+                        // Devs naar stap uitnodiging
+                        waitingDev.release(AANTAL_SOFTWAREONTWIKKELAARS_BINNEN);
+
+                        mutexDev.acquire();
+                        AANTAL_SOFTWAREONTWIKKELAARS_BINNEN=0;
+                        mutexDev.release();
+
+                        // 3 DEVS uitnodigen
+                        waitingDevOverleg.release(3);
+
+                        // Overleg starten
+                        SoftwareOntwikkelaarOverleg();
+                    }else{
+                        System.out.println("Jaap slaapt");
+                    }
+
+                } catch (InterruptedException e) {}
+            }
         }
-
-
     }
 
     public class Softwareontwikkelaar extends Thread{
@@ -94,30 +230,25 @@ public class Bedrijf {
         public void run() {
             while (true) {
                 try {
-                    // meldt regelmatig dat beshcikbaar is voor overleg
-                    beschikbaarVoorOverleg.acquire();
-                    // als projectleider in overleg is, verder met werk
-                    if(inGebruikersOverleg.tryAcquire() || inSoftwareOntwikkelaarOverleg.tryAcquire()){
+                    Thread.sleep((int)(Math.random()*5000));
+                    checkin.release();
 
-                        
+                    if(!inOverleg) {
+
+                        mutexDev.acquire();
+                        AANTAL_SOFTWAREONTWIKKELAARS_BINNEN++;
+                        mutexDev.release();
+
+                        waitingDev.acquire();
+
+                        if(waitingDevOverleg.tryAcquire()){
+                            System.out.println("DEV in overleg");
+                            mutexDevUitn.acquire();
+                            AANTAL_SOFTWAREONTWIKKELAARS_UITGENODIGD++;
+                            mutexDevUitn.release();
+                        }
+
                     }
-                    // als projectleider niet in overleg is, wachten voor uitnodiging voor een overleg
-                    // OF tot geconstateerd dat niet bij gesprek hoort, dan verder met werk
-
-
-                } catch (InterruptedException e) {}
-            }
-        }
-    }
-
-    public class ProductOwner extends Thread{
-
-        public void run() {
-            while (true) {
-                try {
-
-
-
                 } catch (InterruptedException e) {}
             }
         }
@@ -134,20 +265,25 @@ public class Bedrijf {
         public void run() {
             while (true) {
                 try {
-                    // probleem?, melden bij bedrijf
-                    probleemMelding.acquire();
-                    // wachten tot uitgenodigd voor overleg
-                    uitnodigingGesprek.acquire();
-                    // reizen naar bedrijf en melden aangekomen om te overleggen
-                    aankomstMelding.acquire();
-                    // wachten tot product owner zegt dat gesprek begint
-                    gesprekUitnodiging.acquire();
+                    Thread.sleep((int)(Math.random()*100000));
+                    checkin.release();
+
+                    mutexGebr.acquire();
+                    AANTAL_GEBRUIKERS_BINNEN++;
+                    mutexGebr.release();
+
+                    waitingGebrUitn.acquire();
+
+                    // aangekomen bij bedrijf
+                    mutexGebrUitn.acquire();
+                    AANTAL_GEBRUIKERS_UITGENODIGD++;
+                    mutexGebrUitn.release();
+
+                    waitingGebrOverleg.acquire();
+                    System.out.println("GEBRUIKER ACQUIRED");
 
                 } catch (InterruptedException e) {}
             }
         }
     }
-
-
-
 }
