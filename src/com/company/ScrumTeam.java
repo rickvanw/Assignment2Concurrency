@@ -71,6 +71,7 @@ public class ScrumTeam {
 
                             // Checks in
                             checkIn.release();
+                            // TEST System.out.println("1: Developer checked in");
 
                             // Adds a Developer
                             mutexDev.acquire();
@@ -79,13 +80,18 @@ public class ScrumTeam {
                             mutexDev.release();
 
                             // Wait for invite
+                            // TEST System.out.println("2: Developer waiting for invite");
                             inviteDevs.acquire();
 
                             // Developer ready for meeting
+                            // TEST System.out.println("3: Developer ready for meeting");
                             readyForMeeting.release();
 
                             // Waiting for the meeting to be done
+                            // TEST System.out.println("4: Developer waiting for meeting to be done");
                             meetingDone.acquire();
+                            // TEST System.out.println("5: Developer is done with meeting");
+
                         }
 
                     } catch (InterruptedException e) {
@@ -105,6 +111,14 @@ public class ScrumTeam {
                         checkIn.acquire();
 
                         if(checkinDevs>=3 && checkInUser ==0) {
+                            // TESTS
+                            /*
+                            System.out.println("Aantal permits checkIn vóór: "+checkIn.availablePermits());
+                            System.out.println("Aantal permits inviteUsers vóór: "+inviteUsers.availablePermits());
+                            System.out.println("Aantal permits inviteDevs vóór: "+inviteDevs.availablePermits());
+                            System.out.println("Aantal permits readyForMeeting vóór: "+readyForMeeting.availablePermits());
+                            System.out.println("Aantal permits meetingDone vóór: "+meetingDone.availablePermits());
+                            */
 
                             // ** Developer Meeting **
 
@@ -129,7 +143,24 @@ public class ScrumTeam {
                             meetingDone.release(3);
 
                             busy = false;
+                            // TESTS
+                            /*
+                            System.out.println("Aantal permits checkIn na: "+checkIn.availablePermits());
+                            System.out.println("Aantal permits inviteUsers na: "+inviteUsers.availablePermits());
+                            System.out.println("Aantal permits inviteDevs na: "+inviteDevs.availablePermits());
+                            System.out.println("Aantal permits readyForMeeting na: "+readyForMeeting.availablePermits());
+                            System.out.println("Aantal permits meetingDone na: "+meetingDone.availablePermits());
+                            */
                         }else if(checkinDevs>=1 && checkInUser>=1){
+
+                            // TESTS
+                            /*
+                            System.out.println("Aantal permits checkIn vóór: "+checkIn.availablePermits());
+                            System.out.println("Aantal permits inviteUsers vóór: "+inviteUsers.availablePermits());
+                            System.out.println("Aantal permits inviteDevs vóór: "+inviteDevs.availablePermits());
+                            System.out.println("Aantal permits readyForMeeting vóór: "+readyForMeeting.availablePermits());
+                            System.out.println("Aantal permits meetingDone vóór: "+meetingDone.availablePermits());
+                            */
 
                             // ** User Meeting **
 
@@ -162,6 +193,15 @@ public class ScrumTeam {
                             meetingDone.release(checkInUserLocal+1);
 
                             busy = false;
+
+                            // TESTS
+                            /*
+                            System.out.println("Aantal permits checkIn na: "+checkIn.availablePermits());
+                            System.out.println("Aantal permits inviteUsers na: "+inviteUsers.availablePermits());
+                            System.out.println("Aantal permits inviteDevs na: "+inviteDevs.availablePermits());
+                            System.out.println("Aantal permits readyForMeeting na: "+readyForMeeting.availablePermits());
+                            System.out.println("Aantal permits meetingDone na: "+meetingDone.availablePermits());
+                            */
                         }
 
 
@@ -192,6 +232,8 @@ public class ScrumTeam {
 
                         // Checks in
                         checkIn.release();
+                        // TEST System.out.println("1: User checked in");
+
                         mutexUser.acquire();
 
                         // Adds a User(waiting)
@@ -200,13 +242,18 @@ public class ScrumTeam {
                         mutexUser.release();
 
                         // Wait for invite
+                        // TEST System.out.println("2: User waiting for invite");
                         inviteUsers.acquire();
 
                         // User is ready for meeting
                         readyForMeeting.release();
+                        // TEST System.out.println("3: User ready for meeting");
+
 
                         // Waiting until meeting is done
+                        // TEST System.out.println("4: User waiting for meeting to be done");
                         meetingDone.acquire();
+                        // TEST System.out.println("5: User is done with meeting");
 
                     } catch (InterruptedException e) {
                         e.printStackTrace();
