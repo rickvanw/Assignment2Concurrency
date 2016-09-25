@@ -247,7 +247,6 @@ public class Bedrijf {
                             AANTAL_SOFTWAREONTWIKKELAARS_UITGENODIGD++;
                             mutexDevUitn.release();
                         }
-
                     }
                 } catch (InterruptedException e) {}
             }
