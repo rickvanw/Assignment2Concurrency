@@ -19,7 +19,7 @@ public class ScrumTeam {
 
 
     public ScrumTeam() {
-            checkIn = new Semaphore(AANTAL_SOFTWAREONTWIKKELAARS,true);
+            checkIn = new Semaphore(0,true);
             mutexDev = new Semaphore(1);
             mutexUser = new Semaphore(1);
             inviteUsers = new Semaphore(0,true);
